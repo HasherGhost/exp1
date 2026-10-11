@@ -93,9 +93,7 @@ while running:
     if (keys[pygame.K_w] or keys[pygame.K_UP] or
         keys[pygame.K_SPACE]) and on_surface:
         velocity_y = jump_strength
-
-
-    
+ 
     # defining colour and all for already declared elements
     screen.fill (BACKGROUND)
     pygame.draw.rect(screen, PLAYER_COLOR ,player)

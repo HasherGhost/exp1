@@ -179,9 +179,13 @@ def get_observation():
     else:
         target_x, target_y = goal.centerx, goal.centery
 
+    # Report the next obstacle ahead, not whichever hazard happens to be
+    # closest behind the player. Include pipes because they physically block movement.
     hazards = [spike.centerx for spike in spikes]
     hazards += [enemy["rect"].centerx for enemy in enemies]
-    hazard_dx = min(hazards, key=lambda x: abs(x - player_cx)) - player_cx
+    hazards += [pipe.centerx for pipe in pipes]
+    hazards_ahead = [x for x in hazards if x >= player_cx - 8]
+    hazard_dx = (min(hazards_ahead) - player_cx) if hazards_ahead else 400
 
     return [
         player.x / WORLD_WIDTH * 2.0 - 1.0,
@@ -417,11 +421,16 @@ while running:
         reward = -0.02  # Small time penalty: discourage doing nothing.
 
         if lives == previous_lives:
-            # Reward actual progress toward the flag, and penalize moving away.
+            # Make each useful step forward clearly better than reversing.
             old_goal_distance = abs(goal.centerx - previous_center_x)
             new_goal_distance = abs(goal.centerx - player.centerx)
-            goal_progress = (old_goal_distance - new_goal_distance) / 20.0
+            goal_progress = (old_goal_distance - new_goal_distance) / 5.0
             reward += max(-1.0, min(1.0, goal_progress)) * 0.25
+
+            # Repeatedly walking into a wall/pipe gives no progress; teach the
+            # agent that a blocked move is worse than trying a different action.
+            if horizontal != 0 and player.centerx == previous_center_x:
+                reward -= 0.12
         else:
             # Losing a life is much worse than a small movement reward.
             reward -= 18.0

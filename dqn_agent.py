@@ -159,7 +159,7 @@ class DQNAgent:
         outputs = np.tanh(q / q_scale)
         return {
             "inputs": state_array[0].tolist(),
-            "hidden": hidden_values.tolist(),
+            "hidden": np.tanh(hidden[0][:8]).tolist(),
             "outputs": outputs.tolist(),
             "q_values": q.tolist(),
             "predicted_action": int(np.argmax(q)),

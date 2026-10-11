@@ -29,24 +29,29 @@ velocity_y = 0
 running = True
 
 while running:
+    jump_requested = False
+
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
 
-    # i am defining the keys here _ meow 
+        if event.type == pygame.KEYDOWN:
+            if event.key in (pygame.K_w, pygame.K_UP, pygame.K_SPACE):
+                jump_requested = True
 
+    # i am defining the keys here _ meow 
     keys = pygame.key.get_pressed()
 
-    
-    # Horizontal movement
-    
     # Horizontal movement
     dx = 0
-
     if keys[pygame.K_LEFT] or keys[pygame.K_a]:
         dx = -5
     if keys[pygame.K_RIGHT] or keys[pygame.K_d]:
         dx = 5
+
+    # Jumping
+        if jump_requested and on_surface:
+            velocity_y = jump_strength
 
     player.x += dx
 
@@ -88,11 +93,6 @@ while running:
 
             player.top = platform.bottom
             velocity_y = 0
-
-    # Jumping
-    if (keys[pygame.K_w] or keys[pygame.K_UP] or
-        keys[pygame.K_SPACE]) and on_surface:
-        velocity_y = jump_strength
  
     # defining colour and all for already declared elements
     screen.fill (BACKGROUND)

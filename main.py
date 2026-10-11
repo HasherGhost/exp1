@@ -25,7 +25,7 @@ ASSETS = {
     for name, filename in {
         "sky": "sky.png", "cloud": "cloud.png", "ground": "ground.png",
         "platform": "platform.png", "brick": "brick.png",
-        "question": "question_block.png", "player": "player.png",
+ "player": "player.png",
         "coin": "coin.png", "pipe": "pipe.png", "enemy": "enemy.png",
         "spike": "spike.png", "flag": "flag.png", "hill": "hill.png",
     }.items()
@@ -81,17 +81,12 @@ blocks = [
     pygame.Rect(2290, 275, 32, 32), pygame.Rect(2322, 275, 32, 32),
     pygame.Rect(3060, 240, 32, 32), pygame.Rect(3092, 240, 32, 32),
 ]
-question_blocks = [
-    pygame.Rect(635, 255, 32, 32), pygame.Rect(1115, 190, 32, 32),
-    pygame.Rect(1625, 205, 32, 32), pygame.Rect(2350, 235, 32, 32),
-    pygame.Rect(3125, 205, 32, 32), pygame.Rect(3525, 235, 32, 32),
-]
 pipes = [
     pygame.Rect(810, 362, 64, 88), pygame.Rect(1325, 386, 64, 64),
     pygame.Rect(1815, 362, 64, 88), pygame.Rect(2510, 386, 64, 64),
     pygame.Rect(3260, 362, 64, 88), pygame.Rect(3785, 386, 64, 64),
 ]
-solid_surfaces = platforms + blocks + question_blocks + pipes + [ground]
+solid_surfaces = platforms + blocks + pipes + [ground]
 
 # Six main collectible coins are deliberately spread along the level.
 coin_positions = [
@@ -135,7 +130,6 @@ action_id = NO_ACTION
 ai_enabled = False
 camera_x = 0.0
 hurt_cooldown = 0
-question_hit = set()
 agent = DQNAgent()
 terminal_wait = 0
 
@@ -143,7 +137,7 @@ terminal_wait = 0
 def restart_game():
     global player, velocity_y, on_surface, score, lives
     global game_won, game_over, action_id, coin_collected
-    global camera_x, hurt_cooldown, question_hit, terminal_wait
+    global camera_x, hurt_cooldown, terminal_wait
     player = pygame.Rect(PLAYER_START_X, PLAYER_START_Y, 32, 40)
     velocity_y = 0.0
     on_surface = False
@@ -153,7 +147,6 @@ def restart_game():
     coin_collected = [False] * len(coins)
     camera_x = 0.0
     hurt_cooldown = 0
-    question_hit = set()
     terminal_wait = 0
     for enemy in enemies:
         enemy["rect"].x = enemy["left"] + 30
@@ -394,8 +387,6 @@ while running:
                 ceiling = max(ceiling_surfaces, key=lambda rect: rect.bottom)
                 player.top = ceiling.bottom
                 velocity_y = 0.0
-                if ceiling in question_blocks:
-                    question_hit.add((ceiling.x, ceiling.y))
         if jump_requested and on_surface:
             velocity_y = JUMP_STRENGTH
             on_surface = False
@@ -474,9 +465,6 @@ while running:
         draw_tiled(ASSETS["platform"], platform, camera_x)
     for block in blocks:
         screen.blit(ASSETS["brick"], (block.x - camera_x, block.y))
-    for block in question_blocks:
-        sprite = ASSETS["brick"] if (block.x, block.y) in question_hit else ASSETS["question"]
-        screen.blit(sprite, (block.x - camera_x, block.y))
     for pipe_rect in pipes:
         screen.blit(pygame.transform.scale(ASSETS["pipe"], pipe_rect.size),
                     (pipe_rect.x - camera_x, pipe_rect.y))

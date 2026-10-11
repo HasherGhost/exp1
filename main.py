@@ -37,32 +37,45 @@ while running:
 
     keys = pygame.key.get_pressed()
 
+    
+    # Horizontal movement
+    dx = 0
+
     if keys[pygame.K_LEFT] or keys[pygame.K_a]:
-        player.x -= 5
+        dx = -5
     if keys[pygame.K_RIGHT] or keys[pygame.K_d]:
-        player.x += 5
+        dx = 5
 
-    previous_bottom = player.bottom
+    player.x += dx
 
+    for platform in platforms + [ground]:
+        if player.colliderect(platform):
+            if dx > 0:
+                player.right = platform.left
+            elif dx < 0:
+                player.left = platform.right
+
+    # Vertical movement
     velocity_y += gravity
     player.y += int(velocity_y)
 
     on_surface = False
 
     for platform in platforms + [ground]:
-        if (player.right > platform.left and
-            player.left < platform.right and
-            previous_bottom <= platform.top and
-            player.bottom >= platform.top and
-            velocity_y >= 0):
-            player.bottom = platform.top
-            velocity_y = 0
-            on_surface = True
+        if player.colliderect(platform):
+            if velocity_y > 0:
+                player.bottom = platform.top
+                on_surface = True
+            elif velocity_y < 0:
+                player.top = platform.bottom
 
-    if (keys[pygame.K_w] or
-         keys[pygame.K_UP] or
-          keys[pygame.K_SPACE] ) and (on_surface == True):
+            velocity_y = 0
+
+    # Jumping
+    if (keys[pygame.K_w] or keys[pygame.K_UP] or
+        keys[pygame.K_SPACE]) and on_surface:
         velocity_y = jump_strength
+
     
     # defining colour and all for already declared elements
     screen.fill (BACKGROUND)

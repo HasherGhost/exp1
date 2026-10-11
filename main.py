@@ -34,7 +34,7 @@ ASSETS = {
 # --------------------------------------------------
 # GAME CONSTANTS
 # --------------------------------------------------
-WORLD_WIDTH = 4200
+WORLD_WIDTH = 7200
 GROUND_Y = 450
 PLAYER_START_X, PLAYER_START_Y = 90, 400
 GRAVITY = 0.55
@@ -72,6 +72,19 @@ platforms = [
     pygame.Rect(3135, 345, 120, 24),
     pygame.Rect(3375, 295, 160, 24),
     pygame.Rect(3620, 350, 155, 24),
+    # Extended section: broad, spaced platforms with manageable height changes.
+    pygame.Rect(3970, 350, 140, 24),
+    pygame.Rect(4200, 300, 140, 24),
+    pygame.Rect(4440, 345, 150, 24),
+    pygame.Rect(4690, 275, 150, 24),
+    pygame.Rect(4940, 330, 160, 24),
+    pygame.Rect(5195, 285, 150, 24),
+    pygame.Rect(5440, 350, 160, 24),
+    pygame.Rect(5690, 295, 160, 24),
+    pygame.Rect(5950, 340, 160, 24),
+    pygame.Rect(6200, 280, 160, 24),
+    pygame.Rect(6450, 330, 160, 24),
+    pygame.Rect(6700, 350, 130, 24),
 ]
 # Blocks can be landed on and bumped from below.
 blocks = [
@@ -80,11 +93,19 @@ blocks = [
     pygame.Rect(1560, 240, 32, 32), pygame.Rect(1592, 240, 32, 32),
     pygame.Rect(2290, 275, 32, 32), pygame.Rect(2322, 275, 32, 32),
     pygame.Rect(3060, 240, 32, 32), pygame.Rect(3092, 240, 32, 32),
+    pygame.Rect(4310, 255, 32, 32), pygame.Rect(4342, 255, 32, 32),
+    pygame.Rect(4800, 230, 32, 32), pygame.Rect(4832, 230, 32, 32),
+    pygame.Rect(5270, 240, 32, 32), pygame.Rect(5302, 240, 32, 32),
+    pygame.Rect(6210, 235, 32, 32), pygame.Rect(6242, 235, 32, 32),
 ]
 pipes = [
     pygame.Rect(810, 362, 64, 88), pygame.Rect(1325, 386, 64, 64),
     pygame.Rect(1815, 362, 64, 88), pygame.Rect(2510, 386, 64, 64),
     pygame.Rect(3260, 362, 64, 88), pygame.Rect(3785, 386, 64, 64),
+    pygame.Rect(3990, 386, 64, 64), pygame.Rect(4460, 362, 64, 88),
+    pygame.Rect(4930, 386, 64, 64), pygame.Rect(5400, 362, 64, 88),
+    pygame.Rect(5870, 386, 64, 64), pygame.Rect(6340, 362, 64, 88),
+    pygame.Rect(6760, 386, 64, 64),
 ]
 solid_surfaces = platforms + blocks + pipes + [ground]
 
@@ -92,6 +113,8 @@ solid_surfaces = platforms + blocks + pipes + [ground]
 coin_positions = [
     (300, 325), (740, 305), (1000, 235),
     (1730, 300), (2460, 250), (3450, 245),
+    (4070, 315), (4350, 270), (4800, 220), (5270, 230),
+    (5740, 260), (6210, 225), (6630, 250), (6900, 370),
 ]
 coins = [pygame.Rect(x, y, 24, 24) for x, y in coin_positions]
 coin_collected = [False] * len(coins)
@@ -101,6 +124,9 @@ spikes = [
     pygame.Rect(1395, 426, 64, 24), pygame.Rect(2040, 426, 64, 24),
     pygame.Rect(2575, 426, 64, 24), pygame.Rect(3330, 426, 64, 24),
     pygame.Rect(3710, 426, 64, 24),
+    pygame.Rect(4100, 426, 64, 24), pygame.Rect(4570, 426, 64, 24),
+    pygame.Rect(5100, 426, 64, 24), pygame.Rect(5580, 426, 64, 24),
+    pygame.Rect(6050, 426, 64, 24), pygame.Rect(6520, 426, 64, 24),
 ]
 
 # Patrol enemies move back and forth within their own short lanes.
@@ -110,9 +136,15 @@ enemies = [
     {"rect": pygame.Rect(1960, 422, 32, 28), "left": 1870, "right": 2070, "speed": 2.0},
     {"rect": pygame.Rect(2780, 422, 32, 28), "left": 2700, "right": 2860, "speed": 1.7},
     {"rect": pygame.Rect(3500, 422, 32, 28), "left": 3420, "right": 3600, "speed": 2.0},
+    {"rect": pygame.Rect(4250, 422, 32, 28), "left": 4180, "right": 4390, "speed": 1.7},
+    {"rect": pygame.Rect(4720, 422, 32, 28), "left": 4660, "right": 4880, "speed": 1.8},
+    {"rect": pygame.Rect(5200, 422, 32, 28), "left": 5140, "right": 5350, "speed": 1.6},
+    {"rect": pygame.Rect(5670, 422, 32, 28), "left": 5610, "right": 5820, "speed": 1.9},
+    {"rect": pygame.Rect(6140, 422, 32, 28), "left": 6080, "right": 6290, "speed": 1.7},
+    {"rect": pygame.Rect(6610, 422, 32, 28), "left": 6550, "right": 6740, "speed": 1.8},
 ]
 
-goal = pygame.Rect(4020, 310, 32, 140)
+goal = pygame.Rect(7040, 310, 32, 140)
 restart_button = pygame.Rect(WIDTH // 2 - 100, 200, 200, 50)
 
 # --------------------------------------------------

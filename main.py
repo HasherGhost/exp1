@@ -98,7 +98,6 @@ coin_collected = [False] * len(coins)
 # Ground spikes and spikes on a platform.
 spikes = [
     pygame.Rect(440, 405, 55, 25),
-    pygame.Rect(700, 275, 35, 25),
 ]
 
 restart_button = pygame.Rect(350, 180, 200, 50)

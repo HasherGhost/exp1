@@ -42,14 +42,26 @@ while running:
     if keys[pygame.K_RIGHT] or keys[pygame.K_d]:
         player.x += 5
 
+    previous_bottom = player.bottom
+
     velocity_y += gravity
     player.y += int(velocity_y)
 
-    if player.colliderect(ground):
-        player.bottom = ground.top
-        velocity_y = 0
+    on_surface = False
 
-    if (keys[pygame.K_w] or keys[pygame.K_UP] or keys[pygame.K_SPACE]) and player.bottom == ground.top:
+    for platform in platforms + [ground]:
+        if (player.right > platform.left and
+            player.left < platform.right and
+            previous_bottom <= platform.top and
+            player.bottom >= platform.top and
+            velocity_y >= 0):
+            platform.bottom = platform.top
+            velocity_y = 0
+            on_surface = True
+
+    if (keys[pygame.K_w] or
+         keys[pygame.K_UP] or
+          keys[pygame.K_SPACE] ) and (on_surface == True):
         velocity_y = jump_strength
     
     # defining colour and all for already declared elements

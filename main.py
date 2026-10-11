@@ -1,5 +1,6 @@
 
 import pygame
+from ai_controller import choose_action
 
 pygame.init()
 
@@ -121,6 +122,7 @@ game_over = False
 running = True
 
 action_id = NO_ACTION
+ai_enabled = False
 
 # --------------------------------------------------
 # 6. RESTART
@@ -191,6 +193,10 @@ while running:
             elif event.key == pygame.K_r:
                 restart_game()
 
+            elif event.key == pygame.K_i:
+                ai_enabled = not ai_enabled
+                print("AI mode:", "ON" if ai_enabled else "OFF")
+
             elif event.key in (
                 pygame.K_SPACE,
                 pygame.K_UP,
@@ -207,34 +213,70 @@ while running:
                     restart_game()
 
     # --------------------------------------------------
+    # Build the current observation for the AI controller
+    # --------------------------------------------------
+
+    state = [
+        player.x,
+        player.y,
+        velocity_y,
+        coins[0].x,
+        coins[0].y,
+        goal.x,
+        goal.y,
+        int(coin_collected[0]),
+        int(on_surface),
+        int(game_won),
+        lives,
+        int(game_over),
+        score,
+    ]
+
+    # Append each coin's position and collected flag.
+    for i, coin in enumerate(coins):
+        state.extend([
+            coin.x,
+            coin.y,
+            int(coin_collected[i]),
+        ])
+
+    # Append hazard positions for future AI input.
+    for spike in spikes:
+        state.extend([spike.x, spike.y])
+
+    # --------------------------------------------------
     # 9. INPUT AND AI ACTION
     # --------------------------------------------------
 
-    keys = pygame.key.get_pressed()
-
-    moving_left = (
-        keys[pygame.K_LEFT] or keys[pygame.K_a]
-    )
-
-    moving_right = (
-        keys[pygame.K_RIGHT] or keys[pygame.K_d]
-    )
-
     action_id = NO_ACTION
 
-    if moving_left and not moving_right:
-        action_id = MOVE_LEFT
+    if ai_enabled and not game_won and not game_over:
+        action_id = choose_action(state)
 
-    elif moving_right and not moving_left:
-        action_id = MOVE_RIGHT
+    else:
+        keys = pygame.key.get_pressed()
 
-    if jump_requested:
-        if action_id == MOVE_LEFT:
-            action_id = LEFT_JUMP
-        elif action_id == MOVE_RIGHT:
-            action_id = RIGHT_JUMP
-        else:
-            action_id = JUMP
+        moving_left = (
+            keys[pygame.K_LEFT] or keys[pygame.K_a]
+        )
+
+        moving_right = (
+            keys[pygame.K_RIGHT] or keys[pygame.K_d]
+        )
+
+        if moving_left and not moving_right:
+            action_id = MOVE_LEFT
+
+        elif moving_right and not moving_left:
+            action_id = MOVE_RIGHT
+
+        if jump_requested:
+            if action_id == MOVE_LEFT:
+                action_id = LEFT_JUMP
+            elif action_id == MOVE_RIGHT:
+                action_id = RIGHT_JUMP
+            else:
+                action_id = JUMP
 
     action = 0
 
@@ -346,37 +388,8 @@ while running:
     # --------------------------------------------------
     # 14. AI STATE
     # --------------------------------------------------
-
-    # The first 10 values preserve the previous state layout.
-    # Extra values describe the new level.
-
-    state = [
-        player.x,
-        player.y,
-        velocity_y,
-        coins[0].x,
-        coins[0].y,
-        goal.x,
-        goal.y,
-        int(coin_collected[0]),
-        int(on_surface),
-        int(game_won),
-        lives,
-        int(game_over),
-        score,
-    ]
-
-    # Append each coin's position and collected flag.
-    for i, coin in enumerate(coins):
-        state.extend([
-            coin.x,
-            coin.y,
-            int(coin_collected[i]),
-        ])
-
-    # Append hazard positions for future AI input.
-    for spike in spikes:
-        state.extend([spike.x, spike.y])
+    # The current observation is built before action selection,
+    # so the controller always receives a valid, current state.
 
     # --------------------------------------------------
     # 15. DRAW THE LEVEL
@@ -465,8 +478,16 @@ while running:
 
     screen.blit(
         small_font.render(
-            "Move: A/D or arrows | Jump: W/Space | "
-            "Restart: R",
+            f"AI: {'ON' if ai_enabled else 'OFF'} (press I to toggle)",
+            True,
+            COIN_COLOR if ai_enabled else TEXT_COLOR,
+        ),
+        (20, 105),
+    )
+
+    screen.blit(
+        small_font.render(
+            "Move: A/D or arrows | Jump: W/Space | AI: I | Restart: R",
             True,
             TEXT_COLOR,
         ),

@@ -4,17 +4,15 @@ import pygame
 pygame.init()
 
 # --------------------------------------------------
-# 1. GAME WINDOW
+# 1. WINDOW
 # --------------------------------------------------
 
-WIDTH = 900
-HEIGHT = 500
+WIDTH, HEIGHT = 900, 500
 
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Experiment 1 - Merio")
+pygame.display.set_caption("Merio - AI Training Project")
 
 clock = pygame.time.Clock()
-
 font = pygame.font.Font(None, 36)
 small_font = pygame.font.Font(None, 24)
 
@@ -28,11 +26,10 @@ GROUND_COLOR = (100, 110, 130)
 PLATFORM_COLOR = (130, 150, 230)
 COIN_COLOR = (255, 215, 0)
 GOAL_COLOR = (255, 100, 100)
+SPIKE_COLOR = (240, 75, 85)
 TEXT_COLOR = (255, 255, 255)
-
 BUTTON_COLOR = (50, 160, 110)
 BUTTON_HOVER_COLOR = (65, 195, 135)
-BUTTON_TEXT_COLOR = (255, 255, 255)
 
 # --------------------------------------------------
 # 3. GAME CONSTANTS
@@ -63,52 +60,77 @@ ACTION_NAMES = {
 }
 
 # --------------------------------------------------
-# 4. GAME OBJECTS
+# 4. LEVEL DESIGN
+# --------------------------------------------------
+
+ground = pygame.Rect(0, 430, WIDTH, 70)
+
+platforms = [
+    pygame.Rect(200, 350, 130, 20),
+    pygame.Rect(360, 290, 130, 20),
+    pygame.Rect(520, 230, 130, 20),
+    pygame.Rect(680, 300, 120, 20),
+    pygame.Rect(760, 380, 130, 20),
+]
+
+solid_surfaces = platforms + [ground]
+
+goal = pygame.Rect(850, 320, 25, 60)
+
+# Each coin has its own position and collection status.
+coin_positions = [
+    (100, 395),
+    (250, 315),
+    (410, 255),
+    (570, 195),
+    (720, 265),
+    (810, 345),
+]
+
+coins = [
+    pygame.Rect(x, y, 20, 20)
+    for x, y in coin_positions
+]
+
+coin_collected = [False] * len(coins)
+
+# Hazards are rectangles that damage the player.
+# Ground spikes and spikes on a platform.
+spikes = [
+    pygame.Rect(440, 405, 55, 25),
+    pygame.Rect(700, 275, 35, 25),
+]
+
+restart_button = pygame.Rect(350, 180, 200, 50)
+
+# --------------------------------------------------
+# 5. GAME VARIABLES
 # --------------------------------------------------
 
 player = pygame.Rect(
     PLAYER_START_X, PLAYER_START_Y, 40, 40
 )
 
-ground = pygame.Rect(0, 430, WIDTH, 70)
-
-coin = pygame.Rect(400, 390, 20, 20)
-
-goal = pygame.Rect(850, 370, 25, 60)
-
-platforms = [
-    pygame.Rect(230, 340, 150, 20),
-    pygame.Rect(460, 270, 150, 20),
-    pygame.Rect(700, 340, 130, 20),
-]
-
-solid_surfaces = platforms + [ground]
-
-# Restart button
-restart_button = pygame.Rect(350, 160, 200, 50)
-
-# --------------------------------------------------
-# 5. GAME VARIABLES
-# --------------------------------------------------
-
 velocity_y = 0.0
-
 on_surface = False
-game_won = False
 
 score = 0
-coin_collected = False
+lives = 3
 
+game_won = False
+game_over = False
 running = True
+
 action_id = NO_ACTION
 
 # --------------------------------------------------
-# 6. RESTART FUNCTION
+# 6. RESTART
 # --------------------------------------------------
 
 def restart_game():
     global player, velocity_y, on_surface
-    global game_won, score, coin_collected, action_id
+    global score, lives, game_won, game_over
+    global action_id, coin_collected
 
     player = pygame.Rect(
         PLAYER_START_X, PLAYER_START_Y, 40, 40
@@ -117,13 +139,31 @@ def restart_game():
     velocity_y = 0.0
     on_surface = False
 
-    game_won = False
     score = 0
-    coin_collected = False
+    lives = 3
+
+    game_won = False
+    game_over = False
 
     action_id = NO_ACTION
+    coin_collected = [False] * len(coins)
 
-    print("Game restarted!")
+
+def respawn_player():
+    global player, velocity_y, on_surface
+    global lives, game_over, action_id
+
+    lives -= 1
+
+    player.x = PLAYER_START_X
+    player.y = PLAYER_START_Y
+
+    velocity_y = 0.0
+    on_surface = False
+    action_id = NO_ACTION
+
+    if lives <= 0:
+        game_over = True
 
 
 # --------------------------------------------------
@@ -144,7 +184,6 @@ while running:
         if event.type == pygame.QUIT:
             running = False
 
-        # Keyboard events
         elif event.type == pygame.KEYDOWN:
 
             if event.key == pygame.K_ESCAPE:
@@ -154,22 +193,22 @@ while running:
                 restart_game()
 
             elif event.key in (
-                pygame.K_w,
-                pygame.K_UP,
                 pygame.K_SPACE,
+                pygame.K_UP,
+                pygame.K_w,
             ):
                 jump_requested = True
 
-        # Mouse events
         elif event.type == pygame.MOUSEBUTTONDOWN:
 
-            if event.button == 1 and game_won:
-
+            if event.button == 1 and (
+                game_won or game_over
+            ):
                 if restart_button.collidepoint(event.pos):
                     restart_game()
 
     # --------------------------------------------------
-    # 9. SELECT AN ACTION
+    # 9. INPUT AND AI ACTION
     # --------------------------------------------------
 
     keys = pygame.key.get_pressed()
@@ -190,164 +229,162 @@ while running:
     elif moving_right and not moving_left:
         action_id = MOVE_RIGHT
 
-    # Combine horizontal movement with jumping
     if jump_requested:
-
         if action_id == MOVE_LEFT:
             action_id = LEFT_JUMP
-
         elif action_id == MOVE_RIGHT:
             action_id = RIGHT_JUMP
-
         else:
             action_id = JUMP
 
-    # Convert the action ID into physics controls
     action = 0
 
     if action_id in (MOVE_LEFT, LEFT_JUMP):
         action = -1
-
     elif action_id in (MOVE_RIGHT, RIGHT_JUMP):
         action = 1
 
     jump_requested = action_id in (
-        JUMP,
-        LEFT_JUMP,
-        RIGHT_JUMP,
+        JUMP, LEFT_JUMP, RIGHT_JUMP
     )
 
-    # Stop movement after winning
-    if game_won:
-        action = 0
-        jump_requested = False
-
-    dx = action * PLAYER_SPEED
-
     # --------------------------------------------------
-    # 10. HORIZONTAL MOVEMENT
+    # 10. GAME PHYSICS
     # --------------------------------------------------
 
-    player.x += dx
+    if not game_won and not game_over:
 
-    # Keep the player inside the window
-    if player.left < 0:
-        player.left = 0
+        # Horizontal movement
+        dx = action * PLAYER_SPEED
+        player.x += dx
 
-    if player.right > WIDTH:
-        player.right = WIDTH
+        # Keep player inside the window
+        player.left = max(player.left, 0)
+        player.right = min(player.right, WIDTH)
 
-    # Resolve horizontal collisions
-    for platform in solid_surfaces:
+        # Horizontal platform collisions
+        for platform in solid_surfaces:
+            if player.colliderect(platform):
+                if dx > 0:
+                    player.right = platform.left
+                elif dx < 0:
+                    player.left = platform.right
 
-        if player.colliderect(platform):
+        # Vertical movement
+        previous_top = player.top
+        previous_bottom = player.bottom
 
-            if dx > 0:
-                player.right = platform.left
+        velocity_y += GRAVITY
+        player.y += int(velocity_y)
 
-            elif dx < 0:
-                player.left = platform.right
-
-    # --------------------------------------------------
-    # 11. VERTICAL MOVEMENT AND COLLISIONS
-    # --------------------------------------------------
-
-    previous_top = player.top
-    previous_bottom = player.bottom
-
-    velocity_y += GRAVITY
-    player.y += int(velocity_y)
-
-    on_surface = False
-
-    for platform in solid_surfaces:
-
-        horizontal_overlap = (
-            player.right > platform.left
-            and player.left < platform.right
-        )
-
-        if not horizontal_overlap:
-            continue
-
-        # Landing on a platform
-        if (
-            velocity_y > 0
-            and previous_bottom <= platform.top
-            and player.bottom >= platform.top
-        ):
-            player.bottom = platform.top
-            velocity_y = 0.0
-            on_surface = True
-
-        # Hitting the underside of a platform
-        elif (
-            velocity_y < 0
-            and previous_top >= platform.bottom
-            and player.top <= platform.bottom
-        ):
-            player.top = platform.bottom
-            velocity_y = 0.0
-
-    # --------------------------------------------------
-    # 12. JUMPING
-    # --------------------------------------------------
-
-    if jump_requested and on_surface and not game_won:
-        velocity_y = JUMP_STRENGTH
         on_surface = False
 
+        for platform in solid_surfaces:
+
+            horizontal_overlap = (
+                player.right > platform.left
+                and player.left < platform.right
+            )
+
+            if not horizontal_overlap:
+                continue
+
+            # Landing
+            if (
+                velocity_y > 0
+                and previous_bottom <= platform.top
+                and player.bottom >= platform.top
+            ):
+                player.bottom = platform.top
+                velocity_y = 0.0
+                on_surface = True
+
+            # Hitting platform from underneath
+            elif (
+                velocity_y < 0
+                and previous_top >= platform.bottom
+                and player.top <= platform.bottom
+            ):
+                player.top = platform.bottom
+                velocity_y = 0.0
+
+        # Jumping
+        if jump_requested and on_surface:
+            velocity_y = JUMP_STRENGTH
+            on_surface = False
+
+        # --------------------------------------------------
+        # 11. COLLECT COINS
+        # --------------------------------------------------
+
+        for i, coin in enumerate(coins):
+
+            if (
+                not coin_collected[i]
+                and player.colliderect(coin)
+            ):
+                coin_collected[i] = True
+                score += 1
+                print("Score:", score)
+
+        # --------------------------------------------------
+        # 12. SPIKE COLLISIONS
+        # --------------------------------------------------
+
+        for spike in spikes:
+            if player.colliderect(spike):
+                respawn_player()
+                break
+
+        # --------------------------------------------------
+        # 13. WIN CONDITION
+        # --------------------------------------------------
+
+        if player.colliderect(goal):
+            game_won = True
+            print("You win!")
+
     # --------------------------------------------------
-    # 13. COIN COLLECTION
+    # 14. AI STATE
     # --------------------------------------------------
 
-    if (
-        player.colliderect(coin)
-        and not coin_collected
-    ):
-        coin_collected = True
-        score += 1
-
-        print("Score:", score)
-
-    # --------------------------------------------------
-    # 14. GOAL DETECTION
-    # --------------------------------------------------
-
-    if player.colliderect(goal) and not game_won:
-        game_won = True
-        print("You win!")
-
-    # --------------------------------------------------
-    # 15. GAME STATE FOR FUTURE AI
-    # --------------------------------------------------
-
-    # Original seven state values are preserved.
-    # Three additional flags describe the game situation.
+    # The first 10 values preserve the previous state layout.
+    # Extra values describe the new level.
 
     state = [
         player.x,
         player.y,
         velocity_y,
-        coin.x,
-        coin.y,
+        coins[0].x,
+        coins[0].y,
         goal.x,
         goal.y,
-        int(coin_collected),
+        int(coin_collected[0]),
         int(on_surface),
         int(game_won),
+        lives,
+        int(game_over),
+        score,
     ]
 
-    # action_id represents the action chosen this frame.
-    # Later, an AI controller can choose this ID.
+    # Append each coin's position and collected flag.
+    for i, coin in enumerate(coins):
+        state.extend([
+            coin.x,
+            coin.y,
+            int(coin_collected[i]),
+        ])
+
+    # Append hazard positions for future AI input.
+    for spike in spikes:
+        state.extend([spike.x, spike.y])
 
     # --------------------------------------------------
-    # 16. DRAW THE GAME
+    # 15. DRAW THE LEVEL
     # --------------------------------------------------
 
     screen.fill(BACKGROUND)
 
-    # Ground and platforms
     pygame.draw.rect(
         screen, GROUND_COLOR, ground
     )
@@ -357,68 +394,118 @@ while running:
             screen, PLATFORM_COLOR, platform
         )
 
-    # Coin
-    if not coin_collected:
-        pygame.draw.circle(
-            screen, COIN_COLOR, coin.center, 10
+    # Draw uncollected coins
+    for i, coin in enumerate(coins):
+        if not coin_collected[i]:
+            pygame.draw.circle(
+                screen,
+                COIN_COLOR,
+                coin.center,
+                10,
+            )
+            pygame.draw.circle(
+                screen,
+                (255, 245, 180),
+                coin.center,
+                4,
+            )
+
+    # Draw spikes
+    for spike in spikes:
+        points = [
+            (spike.left, spike.bottom),
+            (spike.centerx, spike.top),
+            (spike.right, spike.bottom),
+        ]
+
+        pygame.draw.polygon(
+            screen, SPIKE_COLOR, points
         )
 
-    # Goal and player
+    # Draw goal and player
     pygame.draw.rect(
         screen, GOAL_COLOR, goal
     )
 
     pygame.draw.rect(
-        screen, PLAYER_COLOR, player
+        screen, PLAYER_COLOR, player,
+        border_radius=6,
     )
-
-    # Score display
-    score_text = font.render(
-        f"Coins: {score}",
-        True,
-        TEXT_COLOR,
-    )
-
-    screen.blit(score_text, (20, 20))
-
-    # Debug information for future AI development
-    action_text = small_font.render(
-        f"Action: {action_id} - {ACTION_NAMES[action_id]}",
-        True,
-        TEXT_COLOR,
-    )
-
-    screen.blit(action_text, (20, 55))
 
     # --------------------------------------------------
-    # 17. WIN SCREEN AND RESTART BUTTON
+    # 16. HUD
     # --------------------------------------------------
 
-    if game_won:
+    screen.blit(
+        font.render(
+            f"Coins: {score}/{len(coins)}",
+            True,
+            TEXT_COLOR,
+        ),
+        (20, 15),
+    )
 
-        # Dark overlay
+    screen.blit(
+        font.render(
+            f"Lives: {lives}",
+            True,
+            TEXT_COLOR,
+        ),
+        (20, 48),
+    )
+
+    screen.blit(
+        small_font.render(
+            f"Action: {action_id} - "
+            f"{ACTION_NAMES[action_id]}",
+            True,
+            TEXT_COLOR,
+        ),
+        (20, 82),
+    )
+
+    screen.blit(
+        small_font.render(
+            "Move: A/D or arrows | Jump: W/Space | "
+            "Restart: R",
+            True,
+            TEXT_COLOR,
+        ),
+        (20, HEIGHT - 28),
+    )
+
+    # --------------------------------------------------
+    # 17. WIN / GAME OVER SCREEN
+    # --------------------------------------------------
+
+    if game_won or game_over:
+
         overlay = pygame.Surface(
             (WIDTH, HEIGHT),
             pygame.SRCALPHA,
         )
 
-        overlay.fill((0, 0, 0, 110))
+        overlay.fill((0, 0, 0, 175))
         screen.blit(overlay, (0, 0))
 
-        win_text = font.render(
-            "YOU WIN!",
-            True,
-            COIN_COLOR,
+        if game_won:
+            message = "YOU WIN!"
+            message_color = COIN_COLOR
+        else:
+            message = "GAME OVER"
+            message_color = SPIKE_COLOR
+
+        message_text = font.render(
+            message, True, message_color
         )
 
         screen.blit(
-            win_text,
-            win_text.get_rect(
-                center=(WIDTH // 2, 125)
+            message_text,
+            message_text.get_rect(
+                center=(WIDTH // 2, 130)
             ),
         )
 
-        # Button hover effect
         if restart_button.collidepoint(mouse_position):
             button_color = BUTTON_HOVER_COLOR
         else:
@@ -432,9 +519,7 @@ while running:
         )
 
         button_text = font.render(
-            "RESTART",
-            True,
-            BUTTON_TEXT_COLOR,
+            "RESTART", True, TEXT_COLOR
         )
 
         screen.blit(
@@ -444,24 +529,20 @@ while running:
             ),
         )
 
-        hint_text = small_font.render(
+        hint = small_font.render(
             "Click Restart or press R",
             True,
             TEXT_COLOR,
         )
 
         screen.blit(
-            hint_text,
-            hint_text.get_rect(
-                center=(WIDTH // 2, 230)
+            hint,
+            hint.get_rect(
+                center=(WIDTH // 2, 250)
             ),
         )
 
     pygame.display.flip()
     clock.tick(60)
-
-# --------------------------------------------------
-# 18. EXIT
-# --------------------------------------------------
 
 pygame.quit()

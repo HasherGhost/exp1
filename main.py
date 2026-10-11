@@ -39,6 +39,8 @@ while running:
 
     
     # Horizontal movement
+    
+    # Horizontal movement
     dx = 0
 
     if keys[pygame.K_LEFT] or keys[pygame.K_a]:
@@ -55,7 +57,6 @@ while running:
             elif dx < 0:
                 player.left = platform.right
 
-    
     # Vertical movement
     previous_top = player.top
     previous_bottom = player.bottom
@@ -66,19 +67,33 @@ while running:
     on_surface = False
 
     for platform in platforms + [ground]:
-        if player.colliderect(platform):
-            if velocity_y > 0:
-                player.bottom = platform.top
-                on_surface = True
-            elif velocity_y < 0:
-                player.top = platform.bottom
 
+        # Landing on a platform
+        if (player.right > platform.left and
+            player.left < platform.right and
+            previous_bottom <= platform.top and
+            player.bottom >= platform.top and
+            velocity_y > 0):
+
+            player.bottom = platform.top
+            velocity_y = 0
+            on_surface = True
+
+        # Hitting the underside
+        elif (player.right > platform.left and
+              player.left < platform.right and
+              previous_top >= platform.bottom and
+              player.top <= platform.bottom and
+              velocity_y < 0):
+
+            player.top = platform.bottom
             velocity_y = 0
 
     # Jumping
     if (keys[pygame.K_w] or keys[pygame.K_UP] or
         keys[pygame.K_SPACE]) and on_surface:
         velocity_y = jump_strength
+
 
     
     # defining colour and all for already declared elements

@@ -124,9 +124,9 @@ spikes = [
     pygame.Rect(1395, 426, 64, 24), pygame.Rect(2040, 426, 64, 24),
     pygame.Rect(2575, 426, 64, 24), pygame.Rect(3330, 426, 64, 24),
     pygame.Rect(3710, 426, 64, 24),
-    pygame.Rect(4100, 426, 64, 24), pygame.Rect(4570, 426, 64, 24),
-    pygame.Rect(5100, 426, 64, 24), pygame.Rect(5580, 426, 64, 24),
-    pygame.Rect(6050, 426, 64, 24), pygame.Rect(6520, 426, 64, 24),
+    pygame.Rect(4200, 426, 64, 24), pygame.Rect(4680, 426, 64, 24),
+    pygame.Rect(5150, 426, 64, 24), pygame.Rect(5620, 426, 64, 24),
+    pygame.Rect(6090, 426, 64, 24), pygame.Rect(6560, 426, 64, 24),
 ]
 
 # Patrol enemies move back and forth within their own short lanes.
@@ -136,12 +136,12 @@ enemies = [
     {"rect": pygame.Rect(1960, 422, 32, 28), "left": 1870, "right": 2070, "speed": 2.0},
     {"rect": pygame.Rect(2780, 422, 32, 28), "left": 2700, "right": 2860, "speed": 1.7},
     {"rect": pygame.Rect(3500, 422, 32, 28), "left": 3420, "right": 3600, "speed": 2.0},
-    {"rect": pygame.Rect(4250, 422, 32, 28), "left": 4180, "right": 4390, "speed": 1.7},
-    {"rect": pygame.Rect(4720, 422, 32, 28), "left": 4660, "right": 4880, "speed": 1.8},
-    {"rect": pygame.Rect(5200, 422, 32, 28), "left": 5140, "right": 5350, "speed": 1.6},
-    {"rect": pygame.Rect(5670, 422, 32, 28), "left": 5610, "right": 5820, "speed": 1.9},
-    {"rect": pygame.Rect(6140, 422, 32, 28), "left": 6080, "right": 6290, "speed": 1.7},
-    {"rect": pygame.Rect(6610, 422, 32, 28), "left": 6550, "right": 6740, "speed": 1.8},
+    {"rect": pygame.Rect(4300, 422, 32, 28), "left": 4280, "right": 4390, "speed": 1.7},
+    {"rect": pygame.Rect(4780, 422, 32, 28), "left": 4760, "right": 4880, "speed": 1.8},
+    {"rect": pygame.Rect(5250, 422, 32, 28), "left": 5230, "right": 5350, "speed": 1.6},
+    {"rect": pygame.Rect(5720, 422, 32, 28), "left": 5700, "right": 5820, "speed": 1.9},
+    {"rect": pygame.Rect(6190, 422, 32, 28), "left": 6170, "right": 6290, "speed": 1.7},
+    {"rect": pygame.Rect(6660, 422, 32, 28), "left": 6640, "right": 6740, "speed": 1.8},
 ]
 
 goal = pygame.Rect(7040, 310, 32, 140)

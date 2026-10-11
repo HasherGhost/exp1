@@ -49,10 +49,6 @@ while running:
     if keys[pygame.K_RIGHT] or keys[pygame.K_d]:
         dx = 5
 
-    # Jumping
-        if jump_requested and on_surface:
-            velocity_y = jump_strength
-
     player.x += dx
 
     for platform in platforms + [ground]:
@@ -93,6 +89,10 @@ while running:
 
             player.top = platform.bottom
             velocity_y = 0
+
+    # Jumping
+    if jump_requested and on_surface:
+        velocity_y = jump_strength
  
     # defining colour and all for already declared elements
     screen.fill (BACKGROUND)

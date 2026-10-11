@@ -355,7 +355,7 @@ while running:
             print("You reached the flag!")
 
     # Camera follows the player, with a little space ahead to see obstacles.
-    camera_x = max(0, min(WORLD_WIDTH - WIDTH, player.centerx - WIDTH * 0.38))
+    camera_x = int(max(0, min(WORLD_WIDTH - WIDTH, player.centerx - WIDTH * 0.38)))
     network_view = inspect_network(state)
 
     # --------------------------------------------------

@@ -76,7 +76,7 @@ platforms = [
 
 solid_surfaces = platforms + [ground]
 
-goal = pygame.Rect(850, 320, 25, 60)
+goal = pygame.Rect(850, 370, 25, 60)
 
 # Each coin has its own position and collection status.
 coin_positions = [

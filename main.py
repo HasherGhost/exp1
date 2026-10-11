@@ -55,7 +55,7 @@ while running:
             previous_bottom <= platform.top and
             player.bottom >= platform.top and
             velocity_y >= 0):
-            platform.bottom = platform.top
+            player.bottom = platform.top
             velocity_y = 0
             on_surface = True
 

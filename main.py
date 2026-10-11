@@ -103,8 +103,8 @@ coin_collected = [False] * len(coins)
 
 spikes = [
     pygame.Rect(390, 426, 64, 24), pygame.Rect(875, 426, 64, 24),
-    pygame.Rect(1370, 426, 64, 24), pygame.Rect(2040, 426, 64, 24),
-    pygame.Rect(2575, 426, 64, 24), pygame.Rect(3315, 426, 64, 24),
+    pygame.Rect(1395, 426, 64, 24), pygame.Rect(2040, 426, 64, 24),
+    pygame.Rect(2575, 426, 64, 24), pygame.Rect(3330, 426, 64, 24),
     pygame.Rect(3710, 426, 64, 24),
 ]
 

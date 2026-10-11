@@ -234,7 +234,7 @@ def draw_network_panel(network_view):
     pygame.draw.rect(screen, (70, 90, 120), panel, 1, border_radius=8)
     screen.blit(small_font.render("LEARNING DQN", True, (100, 220, 200)), (panel.x + 10, panel.y + 7))
     screen.blit(tiny_font.render(
-        f"TRAINED WEIGHTS | EP {network_view['episodes']} | EPS {network_view['epsilon']:.2f}",
+        f"LIVE LEARNING | EP {network_view['episodes']} | EPS {network_view['epsilon']:.2f}",
         True, (220, 180, 100)), (panel.x + 10, panel.y + 29))
 
     input_values = network_view["inputs"]

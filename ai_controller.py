@@ -34,15 +34,15 @@ def choose_action(state):
     if game_won or game_over:
         return NO_ACTION
 
-    player_center_x = player_x + 20
+    player_center_x = player_x + 16
     player_center_y = player_y + 20
 
     # Target coin centers (not their top-left corners).
     target = None
     nearest_distance = float("inf")
     for i in range(13, 13 + COIN_COUNT * 3, 3):
-        coin_x = float(state[i]) + 10
-        coin_y = float(state[i + 1]) + 10
+        coin_x = float(state[i]) + 12
+        coin_y = float(state[i + 1]) + 12
         collected = bool(state[i + 2])
         if collected:
             continue
@@ -54,7 +54,7 @@ def choose_action(state):
 
     # Once all coins are collected, head to the middle of the goal.
     if target is None:
-        target = (float(state[5]) + 12, float(state[6]) + 30)
+        target = (float(state[5]) + 16, float(state[6]) + 70)
 
     target_x, target_y = target
     dx = target_x - player_center_x
@@ -143,22 +143,24 @@ def inspect_network(state):
     if uncollected:
         target_x, target_y = min(
             uncollected,
-            key=lambda p: abs(p[0] - (player_x + 20))
-                        + abs(p[1] - (player_y + 20))
+            key=lambda p: abs((p[0] + 12) - (player_x + 16))
+                        + abs((p[1] + 12) - (player_y + 20))
         )
+        target_x += 12
+        target_y += 12
     else:
         target_x, target_y = float(state[5]), float(state[6])
 
     # Normalize inputs to roughly -1..1 before the network sees them.
     inputs = [
-        (player_x - 450.0) / 450.0,
+        (player_x - 2100.0) / 2100.0,
         (player_y - 250.0) / 250.0,
         max(-1.0, min(1.0, velocity_y / 12.0)),
-        max(-1.0, min(1.0, (target_x - (player_x + 20)) / 450.0)),
+        max(-1.0, min(1.0, (target_x - (player_x + 16)) / 2100.0)),
         max(-1.0, min(1.0, (target_y - (player_y + 20)) / 250.0)),
         float(bool(state[8])),
         (len(uncollected) / 6.0) * 2.0 - 1.0,
-        max(-1.0, min(1.0, (float(state[5]) - player_x) / 450.0)),
+        max(-1.0, min(1.0, (float(state[5]) - player_x) / 4200.0)),
     ]
 
     hidden = [

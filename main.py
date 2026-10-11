@@ -206,13 +206,20 @@ def get_observation():
 
 def draw_tiled(image, rect, camera):
     view_rect = pygame.Rect(round(rect.x - camera), rect.y, rect.width, rect.height)
-    if view_rect.right < 0 or view_rect.left > WIDTH:
+    if view_rect.right <= 0 or view_rect.left >= WIDTH:
         return
     tile_w = image.get_width()
     tile_h = image.get_height()
+
+    # Clip the texture to the actual collision rectangle. Without this, the
+    # final 64px tile can draw beyond a platform's right edge, making it look
+    # solid where the player actually falls through.
+    previous_clip = screen.get_clip()
+    screen.set_clip(view_rect.clip(screen.get_rect()))
     for x in range(view_rect.left, view_rect.right, tile_w):
         for y in range(view_rect.top, view_rect.bottom, tile_h):
             screen.blit(image, (x, y))
+    screen.set_clip(previous_clip)
 
 
 def draw_world_background():
@@ -348,11 +355,11 @@ while running:
         player.x += dx
         if dx > 0:
             for solid in sorted(solid_surfaces, key=lambda rect: rect.left):
-                if player.colliderect(solid) and old_right <= solid.left:
+                if player.colliderect(solid):
                     player.right = solid.left
         elif dx < 0:
             for solid in sorted(solid_surfaces, key=lambda rect: rect.right, reverse=True):
-                if player.colliderect(solid) and old_left >= solid.right:
+                if player.colliderect(solid):
                     player.left = solid.right
         player.left = max(0, player.left)
         player.right = min(WORLD_WIDTH, player.right)

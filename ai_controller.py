@@ -10,6 +10,9 @@ JUMP = 3
 LEFT_JUMP = 4
 RIGHT_JUMP = 5
 
+# The current level has six coins; spike coordinates follow them.
+COIN_COUNT = 6
+
 
 def choose_action(state):
     """
@@ -30,8 +33,8 @@ def choose_action(state):
     11 game_over
     12 score
 
-    Each coin after index 12 uses:
-    [coin_x, coin_y, collected]
+    The six coin triples begin at index 13. Spike coordinates follow
+    the coin triples and are intentionally not treated as coins.
     """
 
     if len(state) < 13:
@@ -55,7 +58,7 @@ def choose_action(state):
     target = None
     nearest_distance = float("inf")
 
-    for i in range(13, len(state) - 2, 3):
+    for i in range(13, 13 + COIN_COUNT * 3, 3):
         coin_x = state[i]
         coin_y = state[i + 1]
         collected = bool(state[i + 2])

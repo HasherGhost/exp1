@@ -5,7 +5,7 @@ pygame.init()
 WIDTH = 900
 HEIGHT = 500
 screen = pygame.display.set_mode((WIDTH,HEIGHT))
-pygame.display.set_caption("AI Platformer - Experiment 1")
+pygame.display.set_caption("Experiment 1 - Merio")
 
 BACKGROUND = (25,30,45)
 PLAYER_COLOR = (15,200,160)
@@ -14,6 +14,8 @@ player = pygame.Rect(100,350,40,40)
 ground = pygame.Rect(0,430,WIDTH,70)
 
 clock = pygame.time.Clock()
+gravity = 0.5
+velocity_y = 0
 running = True
 
 while running:
@@ -27,10 +29,8 @@ while running:
         player.x -= 5
     if keys[pygame.K_RIGHT] or keys[pygame.K_d]:
         player.x += 5
-    if keys[pygame.K_UP] or keys[pygame.K_w]:
-        player.y -= 5
-    if keys[pygame.K_DOWN] or keys[pygame.K_s]: 
-        player.y += 5
+
+    
 
     screen.fill (BACKGROUND)
     pygame.draw.rect(screen, PLAYER_COLOR ,player)

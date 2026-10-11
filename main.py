@@ -114,9 +114,16 @@ while running:
     # Jumping
     if jump_requested and on_surface:
         velocity_y = jump_strength
-        
+
     # Game state for AI
-    state = [ player.x, player.y, velocity_y ]
+    state = [
+    player.x,
+    player.y,
+    velocity_y,
+    coin.x,
+    coin.y,
+    goal.x,
+    goal.y]
  
     # defining colour and all for already declared elements
     screen.fill (BACKGROUND)

@@ -30,6 +30,12 @@ while running:
     if keys[pygame.K_RIGHT] or keys[pygame.K_d]:
         player.x += 5
 
+    velocity_y += gravity
+    player.y += int(velocity_y)
+
+    if player.collidedict(ground):
+        player.bottom = ground.top
+        velocity_y = 0
     
 
     screen.fill (BACKGROUND)

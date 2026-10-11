@@ -2,7 +2,7 @@ import math
 from pathlib import Path
 
 import pygame
-from ai_controller import choose_action, inspect_network
+from dqn_agent import DQNAgent
 from assets.generate_assets import ensure_assets
 
 pygame.init()
@@ -136,12 +136,14 @@ ai_enabled = False
 camera_x = 0.0
 hurt_cooldown = 0
 question_hit = set()
+agent = DQNAgent()
+terminal_wait = 0
 
 
 def restart_game():
     global player, velocity_y, on_surface, score, lives
     global game_won, game_over, action_id, coin_collected
-    global camera_x, hurt_cooldown, question_hit
+    global camera_x, hurt_cooldown, question_hit, terminal_wait
     player = pygame.Rect(PLAYER_START_X, PLAYER_START_Y, 32, 40)
     velocity_y = 0.0
     on_surface = False
@@ -152,6 +154,7 @@ def restart_game():
     camera_x = 0.0
     hurt_cooldown = 0
     question_hit = set()
+    terminal_wait = 0
     for enemy in enemies:
         enemy["rect"].x = enemy["left"] + 30
 
@@ -165,6 +168,40 @@ def respawn_player():
     hurt_cooldown = 70
     if lives <= 0:
         game_over = True
+
+
+def get_observation():
+    """Compact, normalized features for the learning agent (not a scripted route)."""
+    player_cx = player.centerx
+    player_cy = player.centery
+    remaining = [
+        (coin.centerx, coin.centery)
+        for i, coin in enumerate(coins) if not coin_collected[i]
+    ]
+    if remaining:
+        target_x, target_y = min(
+            remaining,
+            key=lambda p: abs(p[0] - player_cx) + abs(p[1] - player_cy)
+        )
+    else:
+        target_x, target_y = goal.centerx, goal.centery
+
+    hazards = [spike.centerx for spike in spikes]
+    hazards += [enemy["rect"].centerx for enemy in enemies]
+    hazard_dx = min(hazards, key=lambda x: abs(x - player_cx)) - player_cx
+
+    return [
+        player.x / WORLD_WIDTH * 2.0 - 1.0,
+        player.y / HEIGHT * 2.0 - 1.0,
+        max(-1.0, min(1.0, velocity_y / 15.0)),
+        float(on_surface),
+        max(-1.0, min(1.0, (goal.centerx - player_cx) / WORLD_WIDTH)),
+        max(-1.0, min(1.0, (target_x - player_cx) / 700.0)),
+        max(-1.0, min(1.0, (target_y - player_cy) / HEIGHT)),
+        (sum(coin_collected) / max(1, len(coins))) * 2.0 - 1.0,
+        max(-1.0, min(1.0, hazard_dx / 400.0)),
+        (lives / 3.0) * 2.0 - 1.0,
+    ]
 
 
 def draw_tiled(image, rect, camera):
@@ -195,41 +232,50 @@ def draw_network_panel(network_view):
     panel = pygame.Rect(610, 12, 278, 205)
     pygame.draw.rect(screen, (17, 22, 35), panel, border_radius=8)
     pygame.draw.rect(screen, (70, 90, 120), panel, 1, border_radius=8)
-    screen.blit(small_font.render("NEURAL NETWORK", True, (100, 220, 200)), (panel.x + 10, panel.y + 7))
-    screen.blit(tiny_font.render("LIVE FORWARD PASS | UNTRAINED", True, (220, 180, 100)), (panel.x + 10, panel.y + 29))
-    layer_x = [panel.x + 24, panel.x + 137, panel.x + 250]
+    screen.blit(small_font.render("LEARNING DQN", True, (100, 220, 200)), (panel.x + 10, panel.y + 7))
+    screen.blit(tiny_font.render(
+        f"TRAINED WEIGHTS | EP {network_view['episodes']} | EPS {network_view['epsilon']:.2f}",
+        True, (220, 180, 100)), (panel.x + 10, panel.y + 29))
+
+    input_values = network_view["inputs"]
+    hidden_values = network_view["hidden"]
+    output_values = network_view["outputs"]
+    layer_x = [panel.x + 22, panel.x + 137, panel.x + 250]
     layer_y = [
-        [panel.y + 64 + i * 16 for i in range(8)],
-        [panel.y + 75 + i * 23 for i in range(6)],
-        [panel.y + 75 + i * 23 for i in range(6)],
+        [panel.y + 62 + i * 12 for i in range(len(input_values))],
+        [panel.y + 70 + i * 18 for i in range(len(hidden_values))],
+        [panel.y + 70 + i * 18 for i in range(len(output_values))],
     ]
+    layers = (input_values, hidden_values, output_values)
     for layer in range(2):
-        left_values = network_view["inputs"] if layer == 0 else network_view["hidden"]
-        right_values = network_view["hidden"] if layer == 0 else network_view["outputs"]
+        left_values = layers[layer]
+        right_values = layers[layer + 1]
         for i, y1 in enumerate(layer_y[layer]):
             for j, y2 in enumerate(layer_y[layer + 1]):
-                strength = abs(left_values[i] * right_values[j])
-                shade = int(45 + min(1.0, strength) * 110)
+                strength = min(1.0, abs(left_values[i] * right_values[j]))
+                shade = int(45 + strength * 110)
                 pygame.draw.line(screen, (shade // 2, shade, shade),
                                  (layer_x[layer], y1), (layer_x[layer + 1], y2), 1)
-    layers = (network_view["inputs"], network_view["hidden"], network_view["outputs"])
     for layer_index, values in enumerate(layers):
         for i, value in enumerate(values):
             x, y = layer_x[layer_index], layer_y[layer_index][i]
-            strength = int(80 + abs(value) * 175)
+            strength = int(80 + min(1.0, abs(float(value))) * 175)
             if layer_index == 2 and i == network_view["predicted_action"]:
                 color = (255, 205, 80)
             elif value >= 0:
                 color = (30, strength, 150)
             else:
                 color = (180, 70, strength)
-            pygame.draw.circle(screen, color, (x, y), 5)
-            pygame.draw.circle(screen, (210, 220, 235), (x, y), 5, 1)
-    screen.blit(tiny_font.render("IN", True, WHITE), (panel.x + 8, panel.y + 48))
+            pygame.draw.circle(screen, color, (x, y), 4 if layer_index == 0 else 5)
+            pygame.draw.circle(screen, (210, 220, 235), (x, y), 4 if layer_index == 0 else 5, 1)
+
+    screen.blit(tiny_font.render("STATE", True, WHITE), (panel.x + 5, panel.y + 48))
     screen.blit(tiny_font.render("HIDDEN", True, WHITE), (panel.x + 111, panel.y + 48))
-    screen.blit(tiny_font.render("ACTIONS", True, WHITE), (panel.x + 220, panel.y + 48))
+    screen.blit(tiny_font.render("Q ACTIONS", True, WHITE), (panel.x + 208, panel.y + 48))
     predicted_name = ACTION_NAMES[network_view["predicted_action"]]
-    screen.blit(tiny_font.render(f"NN guess: {predicted_name}", True, GOLD), (panel.x + 10, panel.y + 185))
+    screen.blit(tiny_font.render(
+        f"Best: {predicted_name} | Loss: {network_view['loss']:.3f}",
+        True, GOLD), (panel.x + 10, panel.y + 185))
 
 
 # --------------------------------------------------
@@ -256,20 +302,15 @@ while running:
             if (game_won or game_over) and restart_button.collidepoint(event.pos):
                 restart_game()
 
-    # Preserve the AI controller's current six-coin observation format.
-    state = [
-        player.x, player.y, velocity_y, coins[0].x, coins[0].y,
-        goal.x, goal.y, int(coin_collected[0]), int(on_surface),
-        int(game_won), lives, int(game_over), score,
-    ]
-    for i, coin in enumerate(coins):
-        state.extend([coin.x, coin.y, int(coin_collected[i])])
-    for spike in spikes:
-        state.extend([spike.x, spike.y])
+    observation = get_observation()
+    previous_observation = observation.copy()
+    previous_center_x = player.centerx
+    previous_score = score
+    previous_lives = lives
 
     action_id = NO_ACTION
     if ai_enabled and not game_won and not game_over:
-        action_id = choose_action(state)
+        action_id = agent.act(observation, explore=True)
     else:
         keys = pygame.key.get_pressed()
         left = keys[pygame.K_LEFT] or keys[pygame.K_a]
@@ -354,9 +395,36 @@ while running:
             game_won = True
             print("You reached the flag!")
 
+        # Learn from the actual result of the action just taken.
+        next_observation = get_observation()
+        reward = -0.01
+        if lives == previous_lives:
+            reward += max(-1.0, min(1.0, (player.centerx - previous_center_x) / 20.0)) * 0.08
+        else:
+            reward -= 18.0
+        reward += (score - previous_score) * 12.0
+        if game_won:
+            reward += 100.0
+        done = game_won or game_over
+        if ai_enabled:
+            agent.remember(previous_observation, action_id, reward, next_observation, done)
+            if agent.steps % 4 == 0:
+                agent.train_step()
+            if done:
+                agent.end_episode()
+                terminal_wait = 0
+
+    # In AI mode, automatically begin another episode after showing the result.
+    # This lets training continue without a manual restart after every failure.
+    if ai_enabled and (game_won or game_over):
+        terminal_wait += 1
+        if terminal_wait >= 120:
+            restart_game()
+
+
     # Camera follows the player, with a little space ahead to see obstacles.
     camera_x = int(max(0, min(WORLD_WIDTH - WIDTH, player.centerx - WIDTH * 0.38)))
-    network_view = inspect_network(state)
+    network_view = agent.inspect(get_observation())
 
     # --------------------------------------------------
     # DRAW
@@ -399,7 +467,8 @@ while running:
     screen.blit(font.render(f"COINS  {score}/{len(coins)}", True, GOLD), (24, 18))
     screen.blit(small_font.render(f"Lives: {'♥ ' * max(0, lives)}", True, WHITE), (24, 51))
     screen.blit(small_font.render(f"Action: {ACTION_NAMES[action_id]}", True, WHITE), (24, 75))
-    screen.blit(small_font.render(f"AI: {'ON' if ai_enabled else 'OFF'}  [I]", True,
+    screen.blit(tiny_font.render(f"Episodes: {agent.episodes}  Steps: {agent.steps}", True, WHITE), (150, 104))
+    screen.blit(small_font.render(f"AI: {'LEARNING' if ai_enabled else 'OFF'}  [I]", True,
                                   (80, 245, 180) if ai_enabled else WHITE), (24, 99))
 
     # Level progress bar.

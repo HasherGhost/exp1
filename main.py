@@ -1,6 +1,6 @@
 
 import pygame
-from ai_controller import choose_action
+from ai_controller import choose_action, inspect_network
 
 pygame.init()
 
@@ -391,6 +391,8 @@ while running:
     # The current observation is built before action selection,
     # so the controller always receives a valid, current state.
 
+    network_view = inspect_network(state)
+
     # --------------------------------------------------
     # 15. DRAW THE LEVEL
     # --------------------------------------------------
@@ -492,6 +494,82 @@ while running:
             TEXT_COLOR,
         ),
         (20, HEIGHT - 28),
+    )
+
+
+    # --------------------------------------------------
+    # LIVE NEURAL NETWORK PREVIEW (top-right corner)
+    # --------------------------------------------------
+
+    panel = pygame.Rect(610, 12, 278, 205)
+    pygame.draw.rect(screen, (17, 22, 35), panel, border_radius=8)
+    pygame.draw.rect(screen, (70, 90, 120), panel, 1, border_radius=8)
+
+    screen.blit(
+        small_font.render("NEURAL NETWORK", True, (100, 220, 200)),
+        (panel.x + 10, panel.y + 7),
+    )
+    screen.blit(
+        pygame.font.Font(None, 18).render(
+            "LIVE FORWARD PASS | UNTRAINED",
+            True, (220, 180, 100)
+        ),
+        (panel.x + 10, panel.y + 29),
+    )
+
+    # Three layers: 8 inputs, 6 hidden neurons, 6 action outputs.
+    layer_x = [panel.x + 24, panel.x + 137, panel.x + 250]
+    layer_y = [
+        [panel.y + 64 + i * 16 for i in range(8)],
+        [panel.y + 75 + i * 23 for i in range(6)],
+        [panel.y + 75 + i * 23 for i in range(6)],
+    ]
+
+    # Connections glow more strongly as the connected activation grows.
+    for left_layer in range(2):
+        left_values = (
+            network_view["inputs"] if left_layer == 0
+            else network_view["hidden"]
+        )
+        right_values = (
+            network_view["hidden"] if left_layer == 0
+            else network_view["outputs"]
+        )
+        for i, y1 in enumerate(layer_y[left_layer]):
+            for j, y2 in enumerate(layer_y[left_layer + 1]):
+                strength = abs(left_values[i] * right_values[j])
+                shade = int(45 + min(1.0, strength) * 110)
+                pygame.draw.line(
+                    screen, (shade // 2, shade, shade),
+                    (layer_x[left_layer], y1),
+                    (layer_x[left_layer + 1], y2), 1
+                )
+
+    for layer_index, values in enumerate((
+        network_view["inputs"], network_view["hidden"], network_view["outputs"]
+    )):
+        for i, value in enumerate(values):
+            x = layer_x[layer_index]
+            y = layer_y[layer_index][i]
+            strength = int(80 + abs(value) * 175)
+            if layer_index == 2 and i == network_view["predicted_action"]:
+                color = (255, 205, 80)
+            elif value >= 0:
+                color = (30, strength, 150)
+            else:
+                color = (180, 70, strength)
+            pygame.draw.circle(screen, color, (x, y), 5)
+            pygame.draw.circle(screen, (210, 220, 235), (x, y), 5, 1)
+
+    # Tiny layer labels and current output prediction.
+    mini_font = pygame.font.Font(None, 16)
+    screen.blit(mini_font.render("IN", True, TEXT_COLOR), (panel.x + 8, panel.y + 48))
+    screen.blit(mini_font.render("HIDDEN", True, TEXT_COLOR), (panel.x + 111, panel.y + 48))
+    screen.blit(mini_font.render("ACTIONS", True, TEXT_COLOR), (panel.x + 220, panel.y + 48))
+    predicted_name = ACTION_NAMES[network_view["predicted_action"]]
+    screen.blit(
+        mini_font.render(f"NN guess: {predicted_name}", True, (255, 205, 80)),
+        (panel.x + 10, panel.y + 185),
     )
 
     # --------------------------------------------------

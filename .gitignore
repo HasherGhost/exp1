@@ -1,0 +1,6 @@
+.venv/
+
+__pychche__/
+*.py[cod]
+
+.vscode/

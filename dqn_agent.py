@@ -24,9 +24,9 @@ class DQNAgent:
         self.gamma = 0.97
         self.batch_size = 64
         self.learning_rate = 0.0007
-        self.epsilon = 1.0
-        self.epsilon_min = 0.08
-        self.epsilon_decay = 0.985
+        self.epsilon = 0.65
+        self.epsilon_min = 0.06
+        self.epsilon_decay = 0.94
         self.steps = 0
         self.episodes = 0
         self.loss = 0.0
@@ -53,7 +53,8 @@ class DQNAgent:
             data = np.load(self.model_path)
             self.w1, self.b1 = data["w1"].copy(), data["b1"].copy()
             self.w2, self.b2 = data["w2"].copy(), data["b2"].copy()
-            self.epsilon = float(data["epsilon"])
+            # Keep older saved models from spending nearly every move exploring randomly.
+            self.epsilon = min(0.65, max(self.epsilon_min, float(data["epsilon"])))
             self.episodes = int(data["episodes"])
             self.steps = int(data["steps"])
             self.tw1, self.tb1, self.tw2, self.tb2 = self._copy_weights()
@@ -82,9 +83,35 @@ class DQNAgent:
         state = np.asarray(state, dtype=np.float32).reshape(1, STATE_SIZE)
         self.steps += 1
         if explore and random.random() < self.epsilon:
-            return random.randrange(ACTION_COUNT)
+            # Explore mostly forward/jump actions. Keep a small chance of every
+            # action so the agent can still discover unexpected solutions.
+            return random.choices(
+                range(ACTION_COUNT),
+                weights=(0.08, 0.03, 0.27, 0.12, 0.08, 0.42),
+                k=1,
+            )[0]
+
         q_values, _, _ = self._forward(state)
-        return int(np.argmax(q_values[0]))
+        biased_q = q_values[0].copy()
+        goal_dx = float(state[0, 4])
+        grounded = float(state[0, 3]) > 0.5
+        hazard_dx = float(state[0, 8])
+
+        # This is a soft preference, not a fixed route: learned Q-values still
+        # decide the action, but pointless reversing is less attractive.
+        if goal_dx > 0.02:
+            biased_q[1] -= 0.35  # Left
+            biased_q[4] -= 0.35  # Left + Jump
+            biased_q[2] += 0.12  # Right
+            biased_q[5] += 0.12  # Right + Jump
+
+        # When a spike, enemy, or pipe is close ahead and the player is grounded,
+        # prefer jumping over it rather than walking into it.
+        if grounded and 0.0 < hazard_dx < 0.32:
+            biased_q[3] += 0.30
+            biased_q[5] += 0.55
+
+        return int(np.argmax(biased_q))
 
     def remember(self, state, action, reward, next_state, done):
         self.memory.append((

@@ -50,14 +50,21 @@ while running:
 
     # i am defining the keys here _ meow 
     keys = pygame.key.get_pressed()
-
+    
     # Horizontal movement
-    dx = 0
-    if not game_won:
-        if keys[pygame.K_LEFT] or keys[pygame.K_a]:
-            dx = -5
-        if keys[pygame.K_RIGHT] or keys[pygame.K_d]:
-            dx = 5
+    action = 0
+
+    if keys[pygame.K_LEFT] or keys[pygame.K_a]:
+        action = -1
+
+    if keys[pygame.K_RIGHT] or keys[pygame.K_d]:
+        action = 1
+
+    dx = action * 5
+
+    if game_won:
+        dx = 0
+
 
     player.x += dx
 

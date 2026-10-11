@@ -530,7 +530,7 @@ while running:
     pygame.draw.rect(screen, (17, 30, 48), (12, 10, 260, 118), border_radius=8)
     pygame.draw.rect(screen, (65, 100, 125), (12, 10, 260, 118), 1, border_radius=8)
     screen.blit(font.render(f"COINS  {score}/{len(coins)}", True, GOLD), (24, 18))
-    screen.blit(small_font.render(f"Lives: {'♥ ' * max(0, lives)}", True, WHITE), (24, 51))
+    screen.blit(small_font.render(f"Lives: {'O ' * max(0, lives)}", True, WHITE), (24, 51))
     screen.blit(small_font.render(f"Action: {ACTION_NAMES[action_id]}", True, WHITE), (24, 75))
     screen.blit(tiny_font.render(f"Episodes: {agent.episodes}  Steps: {agent.steps}", True, WHITE), (150, 104))
     screen.blit(small_font.render(f"AI: {'LEARNING' if ai_enabled else 'OFF'}  [I]", True,

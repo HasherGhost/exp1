@@ -10,11 +10,14 @@ pygame.display.set_caption("Experiment 1 - Merio")
 BACKGROUND = (25,30,45)
 PLAYER_COLOR = (15,200,160)
 
+# i am defining the varibales here ~ this is a human made comment not AI XD
+
 player = pygame.Rect(100,350,40,40)
 ground = pygame.Rect(0,430,WIDTH,70)
 
 clock = pygame.time.Clock()
 gravity = 0.5
+jump_strength = -12
 velocity_y = 0
 running = True
 
@@ -33,13 +36,17 @@ while running:
     velocity_y += gravity
     player.y += int(velocity_y)
 
-    if player.collidedict(ground):
+    if player.colliderect(ground):
         player.bottom = ground.top
         velocity_y = 0
+
+    if (keys[pygame.K_w] or keys[pygame.K_UP] or keys[pygame.K_SPACE]) and player.bottom == ground.top:
+        velocity_y = jump_strength
     
 
     screen.fill (BACKGROUND)
     pygame.draw.rect(screen, PLAYER_COLOR ,player)
+    pygame.draw.rect(screen , (100,110,130), ground)
 
     pygame.display.flip()
     clock.tick(60)

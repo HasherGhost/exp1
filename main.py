@@ -62,6 +62,19 @@ coin_collected = False
 
 running = True
 
+def restart_game():
+    global player, velocity_y, on_surface
+    global game_won, score, coin_collected
+
+    player = pygame.Rect(100, 350, 40, 40)
+    velocity_y = 0.0
+    on_surface = False
+
+    game_won = False
+    score = 0
+    coin_collected = False
+
+
 # --------------------------------------------------
 # 5. ACTION IDs FOR FUTURE AI
 # --------------------------------------------------

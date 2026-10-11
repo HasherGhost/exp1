@@ -397,12 +397,22 @@ while running:
 
         # Learn from the actual result of the action just taken.
         next_observation = get_observation()
-        reward = -0.01
+        reward = -0.02  # Small time penalty: discourage doing nothing.
+
         if lives == previous_lives:
-            reward += max(-1.0, min(1.0, (player.centerx - previous_center_x) / 20.0)) * 0.08
+            # Reward actual progress toward the flag, and penalize moving away.
+            old_goal_distance = abs(goal.centerx - previous_center_x)
+            new_goal_distance = abs(goal.centerx - player.centerx)
+            goal_progress = (old_goal_distance - new_goal_distance) / 20.0
+            reward += max(-1.0, min(1.0, goal_progress)) * 0.25
         else:
+            # Losing a life is much worse than a small movement reward.
             reward -= 18.0
-        reward += (score - previous_score) * 12.0
+
+        # Coins are worth a strong bonus, so a useful detour can beat
+        # blindly rushing toward the flag.
+        reward += (score - previous_score) * 15.0
+
         if game_won:
             reward += 100.0
         done = game_won or game_over

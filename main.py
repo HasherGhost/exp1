@@ -58,8 +58,8 @@ DARK = (24, 35, 55)
 ground = pygame.Rect(0, GROUND_Y, WORLD_WIDTH, 100)
 platforms = [
     pygame.Rect(250, 365, 132, 24),
-    pygame.Rect(465, 315, 132, 24),
-    pygame.Rect(710, 355, 125, 24),
+    pygame.Rect(465, 315, 100, 24),
+    pygame.Rect(710, 355, 90, 24),
     pygame.Rect(930, 285, 150, 24),
     pygame.Rect(1170, 355, 150, 24),
     pygame.Rect(1410, 300, 160, 24),
@@ -69,9 +69,9 @@ platforms = [
     pygame.Rect(2380, 300, 160, 24),
     pygame.Rect(2630, 355, 160, 24),
     pygame.Rect(2880, 285, 160, 24),
-    pygame.Rect(3135, 345, 150, 24),
+    pygame.Rect(3135, 345, 120, 24),
     pygame.Rect(3375, 295, 160, 24),
-    pygame.Rect(3620, 350, 175, 24),
+    pygame.Rect(3620, 350, 155, 24),
 ]
 # Blocks can be landed on and bumped from below.
 blocks = [
@@ -341,35 +341,54 @@ while running:
             if enemy["rect"].right >= enemy["right"] or enemy["rect"].left <= enemy["left"]:
                 enemy["speed"] *= -1
 
-        # Horizontal movement and side collisions.
+        # Horizontal movement: resolve the nearest obstacle first so overlapping
+        # collision checks cannot push the player through a second solid object.
         dx = int(horizontal * PLAYER_SPEED)
+        old_left, old_right = player.left, player.right
         player.x += dx
+        if dx > 0:
+            for solid in sorted(solid_surfaces, key=lambda rect: rect.left):
+                if player.colliderect(solid) and old_right <= solid.left:
+                    player.right = solid.left
+        elif dx < 0:
+            for solid in sorted(solid_surfaces, key=lambda rect: rect.right, reverse=True):
+                if player.colliderect(solid) and old_left >= solid.right:
+                    player.left = solid.right
         player.left = max(0, player.left)
         player.right = min(WORLD_WIDTH, player.right)
-        for solid in solid_surfaces:
-            if player.colliderect(solid):
-                if dx > 0:
-                    player.right = solid.left
-                elif dx < 0:
-                    player.left = solid.right
 
-        # Vertical movement, landing, and bumping blocks from underneath.
+        # Vertical movement: choose only the closest surface crossed this frame.
+        # This prevents stacked/nearby solids from fighting over the player's position.
         previous_top, previous_bottom = player.top, player.bottom
         velocity_y += GRAVITY
         player.y += int(velocity_y)
         on_surface = False
-        for solid in solid_surfaces:
-            if player.right <= solid.left or player.left >= solid.right:
-                continue
-            if velocity_y > 0 and previous_bottom <= solid.top and player.bottom >= solid.top:
-                player.bottom = solid.top
+        overlapping_x = [
+            solid for solid in solid_surfaces
+            if player.right > solid.left and player.left < solid.right
+        ]
+
+        if velocity_y > 0:
+            landing_surfaces = [
+                solid for solid in overlapping_x
+                if previous_bottom <= solid.top and player.bottom >= solid.top
+            ]
+            if landing_surfaces:
+                landing = min(landing_surfaces, key=lambda rect: rect.top)
+                player.bottom = landing.top
                 velocity_y = 0.0
                 on_surface = True
-            elif velocity_y < 0 and previous_top >= solid.bottom and player.top <= solid.bottom:
-                player.top = solid.bottom
+        elif velocity_y < 0:
+            ceiling_surfaces = [
+                solid for solid in overlapping_x
+                if previous_top >= solid.bottom and player.top <= solid.bottom
+            ]
+            if ceiling_surfaces:
+                ceiling = max(ceiling_surfaces, key=lambda rect: rect.bottom)
+                player.top = ceiling.bottom
                 velocity_y = 0.0
-                if solid in question_blocks:
-                    question_hit.add((solid.x, solid.y))
+                if ceiling in question_blocks:
+                    question_hit.add((ceiling.x, ceiling.y))
         if jump_requested and on_surface:
             velocity_y = JUMP_STRENGTH
             on_surface = False

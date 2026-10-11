@@ -15,6 +15,13 @@ PLAYER_COLOR = (15,200,160)
 player = pygame.Rect(100,350,40,40)
 ground = pygame.Rect(0,430,WIDTH,70)
 
+platforms = [
+    pygame.Rect(230, 340, 150, 20),
+    pygame.Rect(460, 270, 150, 20),
+    pygame.Rect(700, 340, 130, 20)
+]
+
+
 clock = pygame.time.Clock()
 gravity = 0.5
 jump_strength = -12
@@ -25,6 +32,8 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+
+    # i am defining the keys here _ meow 
 
     keys = pygame.key.get_pressed()
 
@@ -43,10 +52,12 @@ while running:
     if (keys[pygame.K_w] or keys[pygame.K_UP] or keys[pygame.K_SPACE]) and player.bottom == ground.top:
         velocity_y = jump_strength
     
-
+    # defining colour and all for already declared elements
     screen.fill (BACKGROUND)
     pygame.draw.rect(screen, PLAYER_COLOR ,player)
     pygame.draw.rect(screen , (100,110,130), ground)
+    for platform in platforms:
+        pygame.draw.rect(screen, (130,150,230), platform)
 
     pygame.display.flip()
     clock.tick(60)

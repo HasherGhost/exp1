@@ -55,7 +55,11 @@ while running:
             elif dx < 0:
                 player.left = platform.right
 
+    
     # Vertical movement
+    previous_top = player.top
+    previous_bottom = player.bottom
+
     velocity_y += gravity
     player.y += int(velocity_y)
 
